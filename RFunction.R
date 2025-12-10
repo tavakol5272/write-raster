@@ -73,7 +73,7 @@ rFunction <-  function(data, grid, raster_type = c("raster", "ascii", "CDF", "GT
   sum_raster <- Reduce("+", track_raster_list)
   sum_raster[sum_raster == 0] <- NA
   
-  # convert stars → terra SpatRaster
+  # convert stars to terra SpatRaster
   spat_raster <- terra::rast(sum_raster)
   spat_raster[spat_raster == 0] <- NA
   
@@ -90,8 +90,10 @@ rFunction <-  function(data, grid, raster_type = c("raster", "ascii", "CDF", "GT
   
   
   
-  
-  
+# #run locally  
+# res <- rast("./data/output/data_raster.grd")
+# res
+# plot(res)
   
   
   

@@ -26,6 +26,7 @@ rasterize_track <- function(track_sf, time_col, crs_proj, raster_grid) {
 #### Main Function
 rFunction <-  function(data, grid, raster_type = c("raster", "ascii", "CDF", "GTiff")) {
   
+  input_data <- data
   # Handle NULL data
   if (is.null(data) || nrow(data) == 0) {
     logger.info("Input is NULL or has 0 rows — returning NULL.")
@@ -84,7 +85,7 @@ rFunction <-  function(data, grid, raster_type = c("raster", "ascii", "CDF", "GT
   
   logger.info(paste("You request a raster output file of type",raster_type,"with a grid size of",grid,"metres."))
   
-  return(data)
+  return(input_data)
 }
   
   

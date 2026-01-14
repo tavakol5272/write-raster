@@ -4,29 +4,23 @@ MoveApps
 Github repository: *github.com/movestore/write-raster*
 
 ## Description
-This App takes move2 object and creates a track-density raster that can be downloaded in several GIS formats.
+Transforms input data into a density raster (number of tracks) that can be downloaded in several GIS formats.
 
 ## Documentation
+The dataset is projected to an azimuthal equidistant (AEQD) CRS centered on the data, with units in metres. For each individual track, the line is rasterized into a grid of user-defined grid size (in meters) and data-related bounding box. Tracks with less than 2 positions are removed. Rasterized tracks are summed resulting in one density raster (number of tracks) that can be downloaded in the user-selected file format (raster, ascii, CDF, or GTiff).
 
-This App The App get a move2 object as an input and then:
+### Application scope
+#### Generality of App usability
+This App was developed for any taxonomic group. 
 
-1-transformed to WGS84 if the data are not in geographic coordinates (long/lat).
-2-tracks are split by track_id. Tracks with fewer than 2 positions are removed.
-3-The dataset is projected to an azimuthal equidistant (AEQD) CRS centered on the data, with units in metres.
-4-A blank grid is created over the AEQD bounding box. The grid resolution is set to the user-specified grid size (in metres).
-5-Rasterizes tracks and sums them(first converte to a line, rasterize onto the grid, and sum)
-6- The final raster is written in the user-selected file format (raster, ascii, CDF, or GTiff)
-
-The original dataset (possibly transformed to WGS84) is also passed on as output to a possible next App.
-
+#### Required data properties
+The App should work for any kind of (location) data.
 
 ### Input data
 move2::move2_loc
 
-
 ### Output data
 move2::move2_loc
-
 
 ### Artefacts
 data_raster.***: Raster file for download in one of four possible formats:
@@ -41,8 +35,8 @@ data_raster.tif (GeoTIFF)
 
 **Raster file type (`raster_type`):** The user can select one of four different raster output file formats: `raster`, `ascii`, `netCDF` or `GeoTiff`. The default is "raster".
 
-### Null or error handling:
+### Changes in output data
+The input data remains unchanged.
 
-**Data:** If the input data set is `NULL` or has 0 rows, the app logs this and returns the input unchanged.
-**tracks:**If no track has at least 2 positions, the app logs: "No tracks with at least 2 positions in your data set. No rasterization possible."  is shown.
-**output:**If everything is successful,logs a summary :"You request a raster output file of type *** with a grid size of **** metres."
+### Null or error handling:
+**tracks:** If no track has at least 2 positions, the app logs: "No tracks with at least 2 positions in your data set. No rasterization possible."  is shown.

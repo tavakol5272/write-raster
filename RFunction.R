@@ -1,69 +1,100 @@
-library('move')
-library('raster')
-library('sf')
-library('stars')
+library(move2)
+library(sf)
+library(stars)
+library(terra)
 
-rFunction <- function(data,grid,typ)
-{
-  Sys.setenv(tz="UTC")
+###Helper: Rasterize a single track
+rasterize_track <- function(track_sf, time_col, crs_proj, raster_grid) {
   
-  if (is.null(grid))
-  {
-    logger.info("You have not defined a grid cell size. By default we apply 100000 = 100 km here. This may not fit your data set, please go back and configure the App correctly.")
-    grid <- 100000
-  }
-  if (is.null(typ))
-  {
-    logger.info("You have not selected a preferred raster file format. By default, here we apply usual raster format '.grd'. If you need something else, go back and configure the App accordingly.")
-    typ <- "raster"
-  }
-
-  logger.info(paste("You request a raster output file of type",typ,"with a grid size of",grid,"metres."))
+  track_sf <- track_sf[order(track_sf[[time_col]]), , drop = FALSE]  #sort by time
   
-  data.split <- move::split(data)
-  data.split_nozero <- data.split[unlist(lapply(data.split, length) > 1)]
-  if (length(data.split_nozero)==0) logger.info("Warning! Error! There are no segments (or at least 2 positions) in your data set. No rasterization of the tracks possible.") # this is very unlikely, therefore not adaption in the below code for it.
+  # Linestring
+  track_line <- track_sf |>
+    st_geometry() |>
+    st_combine() |>
+    st_cast("LINESTRING")
   
-  midlon <- round(mean(coordinates(data)[,1]))
-  midlat <- round(mean(coordinates(data)[,2]))
+  line_sf  <- st_sf(a = 1, geometry = track_line, crs = crs_proj)
   
-  datat <- spTransform(data,CRSobj=paste0("+proj=aeqd +lat_0=",midlat," +lon_0=",midlon," +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"))
-  sarea <- st_bbox(datat, crs=CRS(paste0("+proj=aeqd +lat_0=",midlat," +lon_0=",midlon," +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs")))
-  grd <- st_as_stars(sarea,dx=grid,dy=grid,values=0) #have to transform into aequ, unit= m
-  sfrast <- lapply(data.split_nozero, function (x) {
-    xt <- spTransform(x,CRSobj=paste0("+proj=aeqd +lat_0=",midlat," +lon_0=",midlon," +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"))
-    ls <- st_sf(a = 1, st_sfc(st_linestring(coordinates(xt))), crs=CRS("+proj=longlat +datum=WGS84"))
-    tmp <- st_rasterize(ls, grd, options="ALL_TOUCHED=TRUE")
-    tmp[is.na(tmp)] <- 0
-    return(tmp)
-    message(paste("Done with ", xt@idData$local_identifier, ".", sep=""))
-  })
-  sumRas <- sfrast[[1]]
-  for (i in seq(along=sfrast)[-1]) sumRas <- sumRas+sfrast[[i]]
-  sumRas[sumRas==0] <- NA
-  res <- as(sumRas,"Raster")
-  
-  if (typ=="raster") writeRaster(res,filename=paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"data_raster.grd"),format="raster")
-  
-  if (typ=="ascii") writeRaster(res,filename=paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"data_raster.asc"),format="ascii")
-  
-  if (typ=="CDF") writeRaster(res,filename=paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"data_raster.nc"),format="CDF")
-  
-  if (typ=="GTiff") writeRaster(res,filename=paste0(Sys.getenv(x = "APP_ARTIFACTS_DIR", "/tmp/"),"data_raster.tif"),format="GTiff")
-  
-  #writeRaster(res,filename="data_raster.grd",format="raster")
-  
-  result <- data
-  return(result)
+  track_raster <- st_rasterize(line_sf, raster_grid, options = "ALL_TOUCHED=TRUE")
+  track_raster[is.na(track_raster)] <- 0
+  track_raster
 }
 
+
+
+#### Main Function
+rFunction <-  function(data, grid, raster_type = c("raster", "ascii", "CDF", "GTiff")) {
+  
+  input_data <- data
+  # Handle NULL data
+  if (is.null(data) || nrow(data) == 0) {
+    logger.info("Input is NULL or has 0 rows — returning NULL.")
+    return(NULL)
+  }
+  
+  # if (st_crs(data)$epsg != 4326) {
+  #   data <- st_transform(data, 4326)
+  # }
+  if (!sf::st_is_longlat(data)) data <- sf::st_transform(data, 4326)
+
+  track_col <- mt_track_id_column(data)
+  time_col <- mt_time_column(data)
+  
+  ## AEQD projection
+  crs_proj <- mt_aeqd_crs(data, center = "center", units = "m")
+  sf_data_proj <- st_transform(data, crs_proj)
+  
+  
+  split_list <- split(sf_data_proj, sf_data_proj[[track_col]])
+  
+ # keep only tracks with at least 2 points 
+  split_list <- split_list[lengths(split_list) >= 2L]
+  
+  if (length(split_list) == 0L) {
+    logger.info("No tracks with at least 2 positions in your data set. No rasterization possible.")
+    return(data)
+  }
+  
+  
+  
+  #blank map grid
+  bounds <- st_bbox(sf_data_proj) # bounding box
+  raster_grid <- st_as_stars( bounds, dx = grid, dy = grid, values = 0 ) 
+  
+  #Rasterize all tracks
+  track_raster_list <- lapply(
+    split_list,
+    rasterize_track,
+    time_col= time_col,
+    crs_proj= crs_proj,
+    raster_grid= raster_grid
+  )
+  
+  sum_raster <- Reduce("+", track_raster_list)
+  sum_raster[sum_raster == 0] <- NA
+  
+  # convert stars to terra SpatRaster
+  spat_raster <- terra::rast(sum_raster)
+  spat_raster[spat_raster == 0] <- NA
+  
+  if (raster_type=="raster") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.grd"), overwrite = TRUE) 
+  if (raster_type=="ascii") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.asc"), overwrite = TRUE) 
+  if (raster_type=="GTiff") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.tif"), overwrite = TRUE) 
+  if (raster_type=="CDF") terra::writeCDF(spat_raster ,filename=appArtifactPath("data_raster.nc"), overwrite = TRUE) 
+  
+  logger.info(paste("You request a raster output file of type",raster_type,"with a grid size of",grid,"metres."))
+  
+  return(input_data)
+}
   
   
   
   
-  
-  
-  
+# #run locally  
+# res <- rast("./data/output/data_raster.grd")
+# res
+# plot(res)
   
   
   

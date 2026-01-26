@@ -4,28 +4,39 @@ MoveApps
 Github repository: *github.com/movestore/write-raster*
 
 ## Description
-Transformation of the input data to a raster that can be downloaded.
+Transforms input data into a density raster (number of tracks) that can be downloaded in several GIS formats.
 
 ## Documentation
-The input Movement data set is transformed into a `st_sf` lines data set and projected in the 'area equal distance' projection (aeqd) centering in the midpoint of all data locations. For each individual track, then the line is rasterized into a grid of user-defined grid size and data-related bounding box. Rasters of all individuals are merged and returned as a raster file of user-selected data type. This file can be downloaded as an artefact in MoveApps. The original data set is also passed on as output to a possible next App. 
+The dataset is projected to an azimuthal equidistant (AEQD) CRS centered on the data, with units in metres. For each individual track, the line is rasterized into a grid of user-defined grid size (in meters) and data-related bounding box. Tracks with less than 2 positions are removed. Rasterized tracks are summed resulting in one density raster (number of tracks) that can be downloaded in the user-selected file format (raster, ascii, CDF, or GTiff).
+
+### Application scope
+#### Generality of App usability
+This App was developed for any taxonomic group. 
+
+#### Required data properties
+The App should work for any kind of (location) data.
 
 ### Input data
-moveStack in Movebank format
+move2::move2_loc
 
 ### Output data
-moveStack in Movebank format
+move2::move2_loc
 
 ### Artefacts
-`data_raster.***`: Raster file for download in four possible formats: `.grd`, `asc`, `.nc` or `.tif.
+data_raster.***: Raster file for download in one of four possible formats:
+
+data_raster.grd (raster)
+data_raster.asc (ASCII grid)
+data_raster.nc (netCDF)
+data_raster.tif (GeoTIFF)
 
 ### Settings 
-**Value of your grid size (`grid`):** This parameter allows the user to decide on the grid cell size (in metres) that the raster shall be calculated in. One numeric value has to be entered.
+**Value of your grid size (`grid`):** This parameter allows the user to decide on the grid cell size (in metres) that the raster shall be calculated in. One numeric value has to be entered. The default is 100000.
 
-**Raster file type (`typ`):** The user can select one of four different raster output file formats: `raster`, `ascii`, `netCDF` or `GeoTiff`.
+**Raster file type (`raster_type`):** The user can select one of four different raster output file formats: `raster`, `ascii`, `netCDF` or `GeoTiff`. The default is "raster".
+
+### Changes in output data
+The input data remains unchanged.
 
 ### Null or error handling:
-**Setting `grid`:** If no grid cell size is defined, a warning message is given and the default value of 100000 = 100 km used. This might not fit well with some data sets, please configure it properly. A numeric value is required, else will lead to errors.
-
-**Setting `typ`:** If no raster file type is provided, a warning message is given and the default value of 'raster' leading to `.grd` files is applied.
-
-**Data:** The full input data set is returned for further use in a next App and cannot be empty.
+**tracks:** If no track has at least 2 positions, the app logs: "No tracks with at least 2 positions in your data set. No rasterization possible."  is shown.

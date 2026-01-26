@@ -1,45 +1,35 @@
 {
+  "version": "1.2",
   "settings": [
   {
       "id": "grid",
       "name": "Value of your grid size",
-      "description": "Insert a numeric value as your preferred grid size (in metres) for the calculation of the raster.",
-      "defaultValue": null,
+      "description": "Insert a numeric value as your preferred grid size (in metres) for the calculation of the raster(The default is 100000 = 100 km and may not fit your data set correctly).",
+      "defaultValue": 100000,
       "type": "DOUBLE"
     },
-{
-      "id": "typ",
+    {
+      "id": "raster_type",
       "name": "Raster file type",
-      "description": "Select the raster file type that you want to create. Note that some options create more than one file. Default is `raster`.",
-      "defaultValue": null,
-      "type": "RADIOBUTTONS",
+      "description": "Select the raster file type that you want to create(Note that some options create more than one file).",
+      "defaultValue": "raster",
+      "type": "DROPDOWN",
       "options": [
-        {
-          "value": "raster",
-          "displayText": "raster (.grd)"
-        },
-		{
-          "value": "ascii",
-          "displayText": "ascii (.asc)"
-        },
-		        {
-          "value": "CDF",
-          "displayText": "netCDF (.nc)"
-        },
-		        {
-          "value": "GTiff",
-          "displayText": "GeoTiff (.tif)"
-        }
+        { "value": "raster",  "displayText": "raster (.grd)" },
+        { "value": "ascii", "displayText": "ascii (.asc)" },
+        { "value": "CDF", "displayText": "netCDF (.nc)" },
+        { "value": "GTiff",  "displayText": "GeoTiff (.tif)" }
       ]
-	}
+    }
   ],
+  
   "dependencies": {
     "R": [
       {
-        "name": "move"
+        "name": "move2"
       },
 	        {
-        "name": "raster"
+        "name": "terra"
       },
 	        {
         "name": "sf"
@@ -58,9 +48,9 @@
     "raster",
     "grd",
     "CDF",
-	"GTiff"
-	"write",
-	"GIS"
+	  "GTiff",
+	  "write",
+	  "GIS"
   ],
   "people": [
     {
@@ -75,9 +65,17 @@
       "orcid": "0000-0003-0193-1563",
       "affiliation": "Max-Planck-Institute of Animal Behavior",
       "affiliationRor": "https://ror.org/026stee22"
-    }
-  ],
-  "documentation": {
-    "url": "https://github.com/movestore/write-raster/blob/main/README.md"
-  }
+    },
+{
+  "firstName": "Nafiseh",
+  "middleInitials": null,
+  "lastName": "Tavakol",
+  "email": "ntavakol@ab.mpg.de",
+  "roles": ["contributor"],
+  "orcid": "0000-0003-3674-4784",
+  "affiliation": "Max-Planck-Institute of Animal Behavior",
+  "affiliationRor": "https://ror.org/026stee22"
+}
+  ]
+  
 }

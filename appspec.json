@@ -36,6 +36,12 @@
       },
 	        {
         "name": "stars"
+      },
+	        {
+        "name": "zip"
+      },
+	        {
+        "name": "ncdf4"
       }
     ]
   },

@@ -2,6 +2,9 @@ library(move2)
 library(sf)
 library(stars)
 library(terra)
+library(zip)
+library(ncdf4)
+
 
 ###Helper: Rasterize a single track
 rasterize_track <- function(track_sf, time_col, crs_proj, raster_grid) {
@@ -78,8 +81,26 @@ rFunction <-  function(data, grid, raster_type = c("raster", "ascii", "CDF", "GT
   spat_raster <- terra::rast(sum_raster)
   spat_raster[spat_raster == 0] <- NA
   
-  if (raster_type=="raster") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.grd"), overwrite = TRUE) 
-  if (raster_type=="ascii") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.asc"), overwrite = TRUE) 
+  #if (raster_type=="raster") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.grd"), overwrite = TRUE) 
+  #if (raster_type=="ascii") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.asc"), overwrite = TRUE)
+  if (raster_type == "raster") {
+    out_path <- appArtifactPath("data_raster.grd")
+    terra::writeRaster(spat_raster, filename = out_path, overwrite = TRUE)
+    out_dir <- dirname(out_path)
+    files_to_zip <- list.files(out_dir, pattern = "^data_raster", full.names = TRUE)
+    zip::zip(zipfile = appArtifactPath("data_raster_raster.zip"),files = files_to_zip,mode = "cherry-pick")
+    file.remove(files_to_zip)
+  }
+  
+  if (raster_type == "ascii") {
+    out_path <- appArtifactPath("data_raster.asc")
+    terra::writeRaster(spat_raster, filename = out_path, overwrite = TRUE)
+    out_dir <- dirname(out_path)
+    files_to_zip <- list.files(out_dir, pattern = "^data_raster", full.names = TRUE)
+    zip::zip(zipfile = appArtifactPath("data_raster_ascii.zip"),files = files_to_zip,mode = "cherry-pick")
+    file.remove(files_to_zip)
+  }
+  
   if (raster_type=="GTiff") terra::writeRaster(spat_raster ,filename=appArtifactPath("data_raster.tif"), overwrite = TRUE) 
   if (raster_type=="CDF") terra::writeCDF(spat_raster ,filename=appArtifactPath("data_raster.nc"), overwrite = TRUE) 
   
